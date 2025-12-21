@@ -56,6 +56,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
             sessionId: session.data.user.id,
             name: session.data.user.name || "User",
             email: session.data.user.email,
+            image: session.data.user.image || undefined,
           })
           console.log("Social user synced to database")
         } catch (error) {
@@ -90,7 +91,8 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
         await mutation({
           sessionId: data.user.id,
           name: values.fullName,
-          email: values.email
+          email: values.email,
+          image: data.user.image || undefined,
         })
       } else {
         console.error("No user ID returned from sign up")

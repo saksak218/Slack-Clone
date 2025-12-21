@@ -6,6 +6,7 @@ export const createUser = mutation({
     sessionId: v.string(),
     name: v.string(),
     email: v.string(),
+    image: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const existingUser = await ctx.db
@@ -14,6 +15,9 @@ export const createUser = mutation({
       .first();
 
     if (existingUser) {
+      if (args.image && existingUser.image !== args.image) {
+        await ctx.db.patch(existingUser._id, { image: args.image });
+      }
       return existingUser;
     }
 
@@ -21,6 +25,7 @@ export const createUser = mutation({
       sessionId: args.sessionId,
       name: args.name,
       email: args.email,
+      image: args.image,
     });
     return user;
   },
