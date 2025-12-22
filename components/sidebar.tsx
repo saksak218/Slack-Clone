@@ -28,14 +28,14 @@ export const Sidebar = ({ selectedChannelId, onSelectChannel }: SidebarProps) =>
     };
 
     return (
-        <div className="flex flex-col h-full text-white p-4">
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold">Channels</h2>
+        <div className="flex flex-col h-full text-white p-3 md:p-4">
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+                <h2 className="text-lg md:text-xl font-bold truncate">Channels</h2>
                 <Button
                     variant="ghost"
                     size="icon-sm"
                     onClick={handleAddChannel}
-                    className="text-white hover:bg-[#4A154B]"
+                    className="text-white hover:bg-[#4A154B] shrink-0"
                 >
                     <Plus className="size-4" />
                 </Button>
