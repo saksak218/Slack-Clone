@@ -51,7 +51,10 @@ export const MessageItem = ({ name, text, createdAt, isAuthor, userImage }: Mess
                         ? "bg-[#1164A3] text-white rounded-2xl rounded-tr-none"
                         : "bg-[#F8F8F8] text-[#1D1C1D] rounded-2xl rounded-tl-none border border-slate-200"
                 )}>
-                    <div dangerouslySetInnerHTML={{ __html: text }} />
+                    <div
+                        className="[&_ol]:list-decimal [&_ul]:list-disc [&_ol]:pl-5 [&_ul]:pl-5 [&_p]:!m-0 [&_li]:!m-0"
+                        dangerouslySetInnerHTML={{ __html: text }}
+                    />
                     {isAuthor && (
                         <div className="text-[9px] text-white/70 mt-1 text-right">
                             {format(createdAt, "h:mm a")}

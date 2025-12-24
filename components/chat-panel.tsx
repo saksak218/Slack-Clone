@@ -6,8 +6,8 @@ import { authClient } from '@/lib/auth-client';
 import { Id } from '@/convex/_generated/dataModel';
 import { Hash, Info, Menu } from 'lucide-react';
 import { MessageItem } from './message-item';
-import { MessageInput } from './message-input';
 import { Button } from './ui/button';
+import MessageInput from './message-input';
 
 interface ChatPanelProps {
     channelId: Id<"channels">;

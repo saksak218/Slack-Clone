@@ -1,100 +1,117 @@
-"use client";
-import { useState } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-import {
-    Send,
-    Plus,
-    Bold as BoldIcon,
-    Italic as ItalicIcon,
-    Strikethrough,
-    Underline as UnderlineIcon,
-    List,
-    ListOrdered
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import Toolbar from "./toolbar";
+"use client"
+
+import { EditorContent, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Placeholder from '@tiptap/extension-placeholder';
+import React from 'react';
+import { Bold, ChevronDown, Plus, SendHorizonal } from 'lucide-react';
+import { Button } from './ui/button';
+import MenuBar from './menu-bar';
+import TextAlign from '@tiptap/extension-text-align';
+import Highlight from "@tiptap/extension-highlight"
 
 interface MessageInputProps {
-    placeholder: string;
-    onSubmit: (content: string) => void;
-    disabled?: boolean;
+    placeholder?: string;
+    onSubmit?: (content: string) => void;
 }
 
-export const MessageInput = ({ placeholder, onSubmit, disabled }: MessageInputProps) => {
-    const [isEmpty, setIsEmpty] = useState(true);
-
+const MessageInput = ({ placeholder = "Message", onSubmit }: MessageInputProps) => {
     const editor = useEditor({
         extensions: [
-            StarterKit,
-            Underline,
+            StarterKit.configure({
+                bulletList: {
+                    HTMLAttributes: {
+                        class: "list-disc ml-1",
+                    },
+                },
+                orderedList: {
+                    HTMLAttributes: {
+                        class: "list-decimal ml-1",
+                    },
+                },
+            }),
+            TextAlign.configure({
+                types: ["heading", "paragraph"],
+            }),
+            Highlight,
         ],
+        content: '',
         immediatelyRender: false,
-        content: "",
         editorProps: {
             attributes: {
-                class: "prose prose-sm focus:outline-none max-w-none min-h-[80px] p-3 text-sm",
+                class: "min-h-[44px] max-h-[200px] overflow-y-auto border-none focus:outline-none focus:border-none focus:ring-0 px-3 py-2 text-sm [&_p]:!m-0 [&_li]:!m-0 [&_li]:!p-0 [&_ul]:!my-0 [&_ol]:!my-0 [&_li>p]:!m-0 [&_li>p]:!leading-normal"
             },
-        },
-        onUpdate: ({ editor }) => {
-            setIsEmpty(editor.isEmpty);
-        },
+
+        }
     });
 
-    const handleSend = () => {
-        if (editor && !isEmpty) {
-            onSubmit(editor.getHTML());
+    const handleSubmit = () => {
+        if (!editor) return;
+        const content = editor.getHTML();
+        if (content.trim() && onSubmit) {
+            onSubmit(content);
             editor.commands.clearContent();
         }
     };
 
-    if (!editor) {
-        return null;
-    }
+    React.useEffect(() => {
+        if (!editor) return;
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Enter') {
+                if (event.shiftKey) {
+                    // If we can split a list item (meaning we are in a list), do that instead of a hard break
+                    if (editor.can().splitListItem('listItem')) {
+                        event.preventDefault();
+                        editor.chain().focus().splitListItem('listItem').run();
+                    }
+                    // Otherwise let default behavior happen (e.g. standard hard break)
+                } else {
+                    // Submit on Enter without Shift
+                    event.preventDefault();
+                    handleSubmit();
+                }
+            }
+        };
+
+        const editorElement = editor.view.dom;
+        editorElement.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            editorElement.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [editor, onSubmit]);
 
     return (
-        <div className="px-5 pb-5 w-full">
-            <div className="flex flex-col border border-slate-300 rounded-md focus-within:border-slate-400 focus-within:shadow-sm transition-all bg-white overflow-hidden">
-                {/* Toolbar */}
-                <Toolbar editor={editor} />
-                <EditorContent
-                    editor={editor}
-                    className="w-full"
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSend();
-                        }
-                    }}
-                />
-                <div className="flex items-center justify-between px-2 pb-2 mt-auto">
-                    <div className="flex items-center gap-1">
-                        <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            disabled={disabled}
-                            className="text-slate-500 hover:bg-slate-100"
-                        >
-                            <Plus className="size-4" />
-                        </Button>
-                    </div>
-                    <Button
-                        size="icon-sm"
-                        disabled={disabled || isEmpty}
-                        onClick={handleSend}
-                        className="bg-[#007a5a] hover:bg-[#007a5a]/90 text-white"
-                    >
-                        <Send className="size-4" />
-                    </Button>
+        <div className="w-full max-w-3xl mx-auto p-4">
+            <div className="bg-white rounded-[10px] border border-b-none border-gray-300 shadow-sm">
+                <div >
+                    <MenuBar editor={editor} />
                 </div>
-            </div>
-            <div className="pt-2 flex justify-end">
-                <span className="text-[10px] text-muted-foreground mr-1">
-                    <b>Return</b> to send
-                </span>
+                <EditorContent editor={editor} />
+                <div className="flex items-center justify-between px-3 py-2 ">
+                    <div className="flex items-center gap-2 text-gray-600">
+                        <button className="bg-gray-100 p-1.5 rounded-full transition-colors">
+                            <span className=""><Plus size={18} /></span>
+                        </button>
+                        <button className="hover:bg-gray-200 p-1.5 rounded transition-colors">
+                            <span className="text-lg">😊</span>
+                        </button>
+                        <button className="hover:bg-gray-100 p-1.5 rounded transition-colors">
+                            <span className="text-lg">@</span>
+                        </button>
+                    </div>
+                    <button
+                        onClick={handleSubmit}
+                        className="bg-green-700 hover:bg-green-700 flex items-center gap-x-2 text-white  h-7 px-2 py-1 rounded text-sm font-medium transition-colors"
+                    >
+
+                        <SendHorizonal size={16} />
+                    </button>
+                </div>
             </div>
         </div>
     );
 };
+
+export default MessageInput;
