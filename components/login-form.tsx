@@ -19,6 +19,7 @@ import { api } from "@/convex/_generated/api"
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { Info } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -29,7 +30,7 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-
+  const router = useRouter()
   const [error, setError] = useState<string | undefined | null>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -57,6 +58,9 @@ export function LoginForm({
             email: session.data.user.email,
           })
           console.log("Social user synced to database from login")
+          // Redirect after sync
+          router.push("/")
+          router.refresh()
         } catch (error) {
           console.error("Error syncing social user from login:", error)
         } finally {
@@ -66,7 +70,7 @@ export function LoginForm({
     }
 
     syncUser()
-  }, [session.data?.user?.id, mutation])
+  }, [session.data?.user?.id, mutation, router])
 
   async function handleSignInWithGoogle() {
     try {
@@ -102,9 +106,15 @@ export function LoginForm({
         return
       }
 
-      console.log(data)
+      console.log("Login successful:", data)
+      sessionStorage.setItem("session", JSON.stringify(data.user))
+
+      // IMPORTANT: Redirect after successful login
+      router.push("/")
+      router.refresh()
     } catch (error) {
       console.error("Unexpected error:", error)
+      setError("An unexpected error occurred")
     }
   }
 
@@ -153,9 +163,6 @@ export function LoginForm({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 text-left">
-
-
-
             <FormField
               control={form.control}
               name="email"
@@ -175,7 +182,6 @@ export function LoginForm({
                       <span className="flex-1">{errors.email.message}</span>
                     </div>
                   )}
-                  {/* <FormMessage /> */}
                 </FormItem>
               )}
             />
@@ -205,7 +211,6 @@ export function LoginForm({
                       <span className="flex-1">{errors.password.message}</span>
                     </div>
                   )}
-                  {/* <FormMessage /> */}
                 </FormItem>
               )}
             />

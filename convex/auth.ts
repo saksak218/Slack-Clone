@@ -42,3 +42,22 @@ export const getCurrentUser = query({
     return authComponent.getAuthUser(ctx);
   },
 });
+
+export const getSessionUser = query({
+  handler: async (ctx) => {
+    // getAuth provides the auth object and headers
+    const { auth } = await authComponent.getAuth(createAuth, ctx);
+    // Use auth.api.getSession() to retrieve the session object
+    const session = await auth.api.getSession();
+
+    console.log("Session:", session);
+    if (!session) {
+      // Handle the case where there is no active session
+      console.log("No active session found");
+      return null;
+    }
+
+    // You can access user data from the session
+    return session;
+  },
+});

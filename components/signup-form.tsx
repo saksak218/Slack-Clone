@@ -18,6 +18,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 
 const formSchema = z.object({
   fullName: z.string().min(2, { message: "Full name must be at least 2 characters long" }).max(50, { message: "Full name must be at most 50 characters long" }),
@@ -30,6 +31,7 @@ const formSchema = z.object({
 })
 
 export function SignupForm({ className, ...props }: React.ComponentProps<"div">) {
+  const router = useRouter()
 
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
@@ -59,6 +61,9 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
             image: session.data.user.image || undefined,
           })
           console.log("Social user synced to database")
+          // Redirect after sync
+          router.push("/")
+          router.refresh()
         } catch (error) {
           console.error("Error syncing social user:", error)
         } finally {
@@ -68,7 +73,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
     }
 
     syncUser()
-  }, [session.data?.user?.id, mutation]) // Depend on user.id to trigger once when logged in
+  }, [session.data?.user?.id, mutation, router])
 
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -94,6 +99,11 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
           email: values.email,
           image: data.user.image || undefined,
         })
+
+        // IMPORTANT: Redirect after successful signup
+        console.log("Signup successful, redirecting...")
+        router.push("/")
+        router.refresh()
       } else {
         console.error("No user ID returned from sign up")
       }
@@ -108,11 +118,11 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
         provider: "google",
         callbackURL: "/signup", // Redirect back here to trigger the useEffect sync
       })
+
     } catch (error) {
       console.error("Unexpected error during Google sign in:", error)
     }
   }
-
 
   return (
     <div className={cn("flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] w-full max-w-lg mx-auto px-4 py-8", className)} {...props}>
