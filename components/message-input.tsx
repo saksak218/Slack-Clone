@@ -21,12 +21,12 @@ const MessageInput = ({ placeholder = "Message", onSubmit }: MessageInputProps) 
             StarterKit.configure({
                 bulletList: {
                     HTMLAttributes: {
-                        class: "list-disc ml-1",
+                        class: "list-disc ml-3",
                     },
                 },
                 orderedList: {
                     HTMLAttributes: {
-                        class: "list-decimal ml-1",
+                        class: "list-decimal ml-3",
                     },
                 },
             }),
