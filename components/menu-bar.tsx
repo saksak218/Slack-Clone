@@ -1,28 +1,23 @@
 "use client"
 
 import {
-    AlignCenter,
-    AlignLeft,
-    AlignRight,
     Bold,
-    Heading1,
-    Heading2,
-    Heading3,
-    Highlighter,
+    Code,
     Italic,
+    Link as LinkIcon,
     List,
     ListOrdered,
+    Quote,
+    SquareTerminal,
     Strikethrough,
+    Underline as UnderlineIcon,
 } from "lucide-react";
 import { Editor } from "@tiptap/react";
 import { Toggle } from "./ui/toggle";
 import { useEffect, useState } from "react";
 
 export default function MenuBar({ editor }: { editor: Editor | null }) {
-    if (!editor) {
-        return null;
-    }
-
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [_, forceUpdate] = useState({});
 
     useEffect(() => {
@@ -43,22 +38,11 @@ export default function MenuBar({ editor }: { editor: Editor | null }) {
         };
     }, [editor]);
 
+    if (!editor) {
+        return null;
+    }
+
     const options = [
-        {
-            icon: <Heading1 className="size-4" />,
-            onClick: () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
-            pressed: editor.isActive("heading", { level: 1 }),
-        },
-        {
-            icon: <Heading2 className="size-4" />,
-            onClick: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
-            pressed: editor.isActive("heading", { level: 2 }),
-        },
-        {
-            icon: <Heading3 className="size-4" />,
-            onClick: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
-            pressed: editor.isActive("heading", { level: 3 }),
-        },
         {
             icon: <Bold className="size-4" />,
             onClick: () => editor.chain().focus().toggleBold().run(),
@@ -70,24 +54,33 @@ export default function MenuBar({ editor }: { editor: Editor | null }) {
             pressed: editor.isActive("italic"),
         },
         {
+            icon: <UnderlineIcon className="size-4" />,
+            onClick: () => editor.chain().focus().toggleUnderline().run(),
+            pressed: editor.isActive("underline"),
+        },
+        {
             icon: <Strikethrough className="size-4" />,
             onClick: () => editor.chain().focus().toggleStrike().run(),
             pressed: editor.isActive("strike"),
         },
         {
-            icon: <AlignLeft className="size-4" />,
-            onClick: () => editor.chain().focus().setTextAlign("left").run(),
-            pressed: editor.isActive({ textAlign: "left" }),
-        },
-        {
-            icon: <AlignCenter className="size-4" />,
-            onClick: () => editor.chain().focus().setTextAlign("center").run(),
-            pressed: editor.isActive({ textAlign: "center" }),
-        },
-        {
-            icon: <AlignRight className="size-4" />,
-            onClick: () => editor.chain().focus().setTextAlign("right").run(),
-            pressed: editor.isActive({ textAlign: "right" }),
+            icon: <LinkIcon className="size-4" />,
+            onClick: () => {
+                const previousUrl = editor.getAttributes('link').href
+                const url = window.prompt('URL', previousUrl)
+
+                if (url === null) {
+                    return
+                }
+
+                if (url === '') {
+                    editor.chain().focus().extendMarkRange('link').unsetLink().run()
+                    return
+                }
+
+                editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+            },
+            pressed: editor.isActive("link"),
         },
         {
             icon: <List className="size-4" />,
@@ -100,25 +93,33 @@ export default function MenuBar({ editor }: { editor: Editor | null }) {
             pressed: editor.isActive("orderedList"),
         },
         {
-            icon: <Highlighter className="size-4" />,
-            onClick: () => editor.chain().focus().toggleHighlight().run(),
-            pressed: editor.isActive("highlight"),
+            icon: <Quote className="size-4" />,
+            onClick: () => editor.chain().focus().toggleBlockquote().run(),
+            pressed: editor.isActive("blockquote"),
+        },
+        {
+            icon: <Code className="size-4" />,
+            onClick: () => editor.chain().focus().toggleCode().run(),
+            pressed: editor.isActive("code"),
+        },
+        {
+            icon: <SquareTerminal className="size-4" />,
+            onClick: () => editor.chain().focus().toggleCodeBlock().run(),
+            pressed: editor.isActive("codeBlock"),
         },
     ];
-    useEffect(() => {
-        console.log(options.map(option => option.pressed))
-    }, [editor, options])
+
 
 
     return (
-        <div className="border rounded-md p-1 mb-1 bg-slate-50 space-x-2 z-50">
+        <div className="flex items-center gap-0.5 p-1 bg-transparent">
             {options.map((option, index) => (
                 <Toggle
                     key={index}
                     defaultPressed={false}
                     pressed={option.pressed}
                     onPressedChange={option.onClick}
-                    className="data-[state=on]:bg-gray-300 "
+                    className="data-[state=on]:bg-gray-200 hover:bg-gray-100 h-7 w-7"
                 >
                     {option.icon}
                 </Toggle>

@@ -58,8 +58,8 @@ export function LoginForm({
             email: session.data.user.email,
           })
           console.log("Social user synced to database from login")
-          // Redirect after sync
-          router.push("/")
+          // Redirect to workspace selection after sync
+          router.push("/workspace-select")
           router.refresh()
         } catch (error) {
           console.error("Error syncing social user from login:", error)
@@ -109,8 +109,8 @@ export function LoginForm({
       console.log("Login successful:", data)
       sessionStorage.setItem("session", JSON.stringify(data.user))
 
-      // IMPORTANT: Redirect after successful login
-      router.push("/")
+      // IMPORTANT: Redirect to workspace selection after successful login
+      router.push("/workspace-select")
       router.refresh()
     } catch (error) {
       console.error("Unexpected error:", error)

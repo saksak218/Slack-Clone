@@ -5,18 +5,29 @@ export const createMessage = mutation({
   args: {
     channelId: v.id("channels"),
     userId: v.string(),
-    name: v.string(),
     text: v.string(),
-    updatedAt: v.optional(v.number()),
+    replyTo: v.optional(v.id("messages")),
   },
   handler: async (ctx, args) => {
-    const message = await ctx.db.insert("messages", {
+    const messageId = await ctx.db.insert("messages", {
       channelId: args.channelId,
       userId: args.userId,
-      name: args.name,
       text: args.text,
-      updatedAt: args.updatedAt,
+      replyTo: args.replyTo,
     });
-    return message;
+    return messageId;
+  },
+});
+
+export const editMessage = mutation({
+  args: {
+    messageId: v.id("messages"),
+    text: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.messageId, {
+      text: args.text,
+      editedAt: Date.now(),
+    });
   },
 });

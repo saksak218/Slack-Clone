@@ -4,7 +4,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { Id } from '@/convex/_generated/dataModel';
-import { Hash, Info, Menu } from 'lucide-react';
+import { ChevronDown, Hash, Info, Menu } from 'lucide-react';
 import { MessageItem } from './message-item';
 import { Button } from './ui/button';
 import MessageInput from './message-input';
@@ -30,7 +30,6 @@ export const ChatPanel = ({ channelId, onOpenSidebar }: ChatPanelProps) => {
                 await createMessage({
                     channelId,
                     userId: session.data.user.id,
-                    name: session.data.user.name || "Anonymous",
                     text,
                 });
             } catch (error) {
@@ -42,40 +41,52 @@ export const ChatPanel = ({ channelId, onOpenSidebar }: ChatPanelProps) => {
     return (
         <div className="flex flex-col h-full bg-white">
             {/* Header */}
-            <div className="h-[49px] border-b flex items-center justify-between px-2 sm:px-4 shrink-0">
+            <div className="h-[49px] border-b border-gray-200 flex items-center justify-between px-4 shrink-0 bg-white">
                 <div className="flex items-center gap-1 overflow-hidden min-w-0 flex-1">
                     <Button
                         variant="ghost"
                         size="icon-sm"
-                        className="md:hidden mr-1 shrink-0"
+                        className="md:hidden mr-1 shrink-0 hover:bg-gray-100"
                         onClick={onOpenSidebar}
                     >
-                        <Menu className="size-5" />
+                        <Menu className="size-5 text-gray-700" />
                     </Button>
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="text-base sm:text-lg font-bold px-1 hover:bg-slate-100/50 min-w-0 flex-1"
+                        className="text-base font-bold px-2 hover:bg-gray-50 min-w-0 flex-1 justify-start"
                     >
-                        <Hash className="size-4 sm:size-5 mr-1 text-gray-500 shrink-0" />
-                        <span className="truncate">
-                            {channel?.name || "Loading..."}
+                        <Hash className="size-5 mr-1.5 text-gray-500 shrink-0" />
+                        <span className="truncate font-bold text-gray-900">
+                            {channel?.name}
                         </span>
+                        <ChevronDown className="size-4 ml-1 text-gray-500 shrink-0" />
                     </Button>
+                    <span className="hidden md:block text-xs text-gray-500 pl-3 border-l border-gray-300 ml-3 h-4 truncate">
+                        Add a topic
+                    </span>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                    <Button variant="ghost" size="icon" className="text-gray-500 hidden sm:flex">
+                <div className="flex items-center gap-1 shrink-0">
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-gray-500 hover:bg-gray-100 hidden sm:flex"
+                    >
                         <Info className="size-5" />
                     </Button>
-                    <Button variant="ghost" size="icon-sm" className="text-gray-500 sm:hidden">
+                    <Button 
+                        variant="ghost" 
+                        size="icon-sm" 
+                        className="text-gray-500 hover:bg-gray-100 sm:hidden"
+                    >
                         <Info className="size-4" />
                     </Button>
                 </div>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto flex flex-col-reverse px-2 sm:px-4">
-                <div className="flex flex-col pb-4">
+            <div className="flex-1 overflow-y-auto flex flex-col-reverse px-4 py-2">
+                <div className="flex flex-col">
                     {messages?.map((message) => (
                         <MessageItem
                             key={message._id}
@@ -86,11 +97,16 @@ export const ChatPanel = ({ channelId, onOpenSidebar }: ChatPanelProps) => {
                             userImage={message.userImage}
                         />
                     ))}
+                    {messages?.length === 0 && (
+                        <div className="flex items-center justify-center h-full text-gray-500 text-sm">
+                            No messages yet. Start the conversation!
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Input Area */}
-            <div className="px-2 sm:px-4">
+            <div className="border-t border-gray-200 bg-white">
                 <MessageInput
                     placeholder={`Message #${channel?.name || "..."}`}
                     onSubmit={handleSend}

@@ -19,6 +19,7 @@ import { z } from "zod"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useSyncUser } from "@/hooks/use-sync-user"
 
 const formSchema = z.object({
   fullName: z.string().min(2, { message: "Full name must be at least 2 characters long" }).max(50, { message: "Full name must be at most 50 characters long" }),
@@ -46,34 +47,9 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
 
   const session = authClient.useSession()
   const mutation = useMutation(api.functions.users.mutations.createUser)
-  const [isSyncing, setIsSyncing] = useState(false)
-
-  // Sync user after social login redirect
-  useEffect(() => {
-    const syncUser = async () => {
-      if (session.data?.user && !isSyncing) {
-        setIsSyncing(true)
-        try {
-          await mutation({
-            sessionId: session.data.user.id,
-            name: session.data.user.name || "User",
-            email: session.data.user.email,
-            image: session.data.user.image || undefined,
-          })
-          console.log("Social user synced to database")
-          // Redirect after sync
-          router.push("/")
-          router.refresh()
-        } catch (error) {
-          console.error("Error syncing social user:", error)
-        } finally {
-          setIsSyncing(false)
-        }
-      }
-    }
-
-    syncUser()
-  }, [session.data?.user?.id, mutation, router])
+  
+  // Use the shared sync hook for OAuth signups
+  const { isSyncing, hasSynced } = useSyncUser()
 
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -100,9 +76,9 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
           image: data.user.image || undefined,
         })
 
-        // IMPORTANT: Redirect after successful signup
+        // IMPORTANT: Redirect to workspace selection after successful signup
         console.log("Signup successful, redirecting...")
-        router.push("/")
+        router.push("/workspace-select")
         router.refresh()
       } else {
         console.error("No user ID returned from sign up")
@@ -114,14 +90,30 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
 
   async function handleSignUpWithGoogle() {
     try {
-      await authClient.signIn.social({
+      console.log("🚀 Starting Google signup...")
+      // better-auth uses signIn.social for both signup and signin
+      // It will create account if user doesn't exist
+      const result = await authClient.signIn.social({
         provider: "google",
         callbackURL: "/signup", // Redirect back here to trigger the useEffect sync
       })
-
-    } catch (error) {
-      console.error("Unexpected error during Google sign in:", error)
+      console.log("Google signup initiated:", result)
+    } catch (error: any) {
+      console.error("❌ Unexpected error during Google sign up:", error)
+      alert(`Google signup failed: ${error.message || "Unknown error"}`)
     }
+  }
+
+  // Show loading state while syncing Google user
+  if (isSyncing) {
+    return (
+      <div className={cn("flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] w-full max-w-lg mx-auto px-4 py-8", className)} {...props}>
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="text-gray-600">Setting up your account...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -15,6 +15,9 @@ import type * as functions_chat_mutations from "../functions/chat/mutations.js";
 import type * as functions_chat_queries from "../functions/chat/queries.js";
 import type * as functions_users_mutations from "../functions/users/mutations.js";
 import type * as functions_users_queries from "../functions/users/queries.js";
+import type * as functions_workspaces_invites from "../functions/workspaces/invites.js";
+import type * as functions_workspaces_mutations from "../functions/workspaces/mutations.js";
+import type * as functions_workspaces_queries from "../functions/workspaces/queries.js";
 import type * as http from "../http.js";
 
 import type {
@@ -31,6 +34,9 @@ declare const fullApi: ApiFromModules<{
   "functions/chat/queries": typeof functions_chat_queries;
   "functions/users/mutations": typeof functions_users_mutations;
   "functions/users/queries": typeof functions_users_queries;
+  "functions/workspaces/invites": typeof functions_workspaces_invites;
+  "functions/workspaces/mutations": typeof functions_workspaces_mutations;
+  "functions/workspaces/queries": typeof functions_workspaces_queries;
   http: typeof http;
 }>;
 

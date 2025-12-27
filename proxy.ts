@@ -7,6 +7,7 @@ import { api } from "./convex/_generated/api";
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isPublicRoute = ["/login", "/signup"].includes(path);
+  const isWorkspaceSelectRoute = path === "/workspace-select";
 
   try {
     const [currentUser] = await Promise.all([
@@ -16,13 +17,18 @@ export async function proxy(request: NextRequest) {
 
     console.log("Session", currentUser);
 
-    // If logged in and on a public route (login/signup), redirect to home
+    // If logged in and on a public route (login/signup), redirect to workspace select
     if (currentUser && isPublicRoute) {
-      return NextResponse.redirect(new URL("/", request.url));
+      return NextResponse.redirect(new URL("/workspace-select", request.url));
     }
 
-    // If NOT logged in and on a protected route, redirect to login
-    if (!currentUser && !isPublicRoute) {
+    // If NOT logged in and on a protected route (not public, not workspace-select), redirect to login
+    if (!currentUser && !isPublicRoute && !isWorkspaceSelectRoute) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    // If NOT logged in and on workspace-select, redirect to login
+    if (!currentUser && isWorkspaceSelectRoute) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
   } catch (error) {
@@ -41,5 +47,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/login", "/signup"], // Specify the routes the middleware applies to
+  matcher: ["/", "/login", "/signup", "/workspace-select"], // Specify the routes the middleware applies to
 };

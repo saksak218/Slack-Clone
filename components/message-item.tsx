@@ -17,49 +17,37 @@ export const MessageItem = ({ name, text, createdAt, isAuthor, userImage }: Mess
 
     return (
         <div className={cn(
-            "flex items-end gap-2 px-5 py-2 group transition-colors",
-            isAuthor ? "flex-row-reverse" : "flex-row"
+            "flex items-start gap-3 px-4 py-1.5 group hover:bg-gray-50/50 transition-colors",
+            "flex-row"
         )}>
-            <div className="shrink-0 mb-1">
-                <Avatar className="size-8 rounded-md">
-                    <AvatarImage src={userImage} className="rounded-md" />
+            <div className="shrink-0 mt-0.5">
+                <Avatar className="size-10 rounded">
+                    <AvatarImage src={userImage} className="rounded" />
                     <AvatarFallback className={cn(
-                        "rounded-md text-white text-[10px] font-semibold",
-                        isAuthor ? "bg-[#1164A3]" : "bg-sky-500"
+                        "rounded text-white text-xs font-semibold",
+                        "bg-sky-500"
                     )}>
                         {avatarFallback}
                     </AvatarFallback>
                 </Avatar>
             </div>
-            <div className={cn(
-                "flex flex-col max-w-[85%] md:max-w-[70%] gap-1",
-                isAuthor ? "items-end" : "items-start"
-            )}>
-                {!isAuthor && (
-                    <div className="flex items-center gap-2 pl-1">
-                        <button className="font-bold text-xs hover:underline">
-                            {name}
-                        </button>
-                        <span className="text-[10px] text-muted-foreground">
-                            {format(createdAt, "h:mm a")}
-                        </span>
-                    </div>
-                )}
+            <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2 mb-1">
+                    <button className="font-bold text-sm text-gray-900 hover:underline">
+                        {name}
+                    </button>
+                    <span className="text-xs text-gray-500">
+                        {format(createdAt, "h:mm a")}
+                    </span>
+                </div>
                 <div className={cn(
-                    "px-4 py-2 text-sm shadow-sm",
-                    isAuthor
-                        ? "bg-[#1164A3] text-white rounded-2xl rounded-tr-none"
-                        : "bg-[#F8F8F8] text-[#1D1C1D] rounded-2xl rounded-tl-none border border-slate-200"
+                    "text-sm text-gray-900 leading-relaxed",
+                    "[&_p]:mb-1 [&_p:last-child]:mb-0"
                 )}>
                     <div
-                        className="[&_ol]:list-decimal [&_ul]:list-disc [&_ol]:pl-5 [&_ul]:pl-5 [&_p]:!m-0 [&_li]:!m-0"
+                        className="[&_ol]:list-decimal [&_ul]:list-disc [&_ol]:pl-5 [&_ul]:pl-5 [&_p]:!m-0 [&_p]:leading-relaxed [&_li]:!m-0 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-400 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-700 [&_code]:bg-[rgba(29,28,29,0.08)] [&_code]:text-[#e01e5a] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:font-mono [&_code]:text-sm [&_pre]:bg-[#f8f8f8] [&_pre]:border [&_pre]:border-[#e0e0e0] [&_pre]:text-[#1d1c1d] [&_pre]:p-3 [&_pre]:rounded-md [&_pre]:font-mono [&_pre]:my-2 [&_pre]:overflow-x-auto [&_a]:text-blue-600 [&_a]:underline [&_a]:hover:text-blue-800 [&_u]:underline"
                         dangerouslySetInnerHTML={{ __html: text }}
                     />
-                    {isAuthor && (
-                        <div className="text-[9px] text-white/70 mt-1 text-right">
-                            {format(createdAt, "h:mm a")}
-                        </div>
-                    )}
                 </div>
             </div>
         </div>

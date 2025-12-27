@@ -8,7 +8,7 @@ export const getMessages = query({
   handler: async (ctx, args) => {
     const messages = await ctx.db
       .query("messages")
-      .filter((q) => q.eq(q.field("channelId"), args.channelId))
+      .withIndex("by_channel", (q) => q.eq("channelId", args.channelId))
       .order("desc")
       .take(100);
 
@@ -17,18 +17,18 @@ export const getMessages = query({
       userIds.map((id) =>
         ctx.db
           .query("users")
-          .filter((q) => q.eq(q.field("sessionId"), id))
+          .withIndex("by_sessionId", (q) => q.eq("sessionId", id))
           .first(),
       ),
     );
 
-    const userMap = new Map(users.map((u) => [u?.sessionId, u]));
+    const userMap = new Map(users.filter(Boolean).map((u) => [u!.sessionId, u!]));
 
     const messagesWithUsers = messages.map((message) => {
       const user = userMap.get(message.userId);
       return {
         ...message,
-        userName: user?.name || message.name || "Unknown User",
+        userName: user?.name || "Unknown User",
         userImage: user?.image,
       };
     });
