@@ -57,7 +57,7 @@ export const createInvite = mutation({
         invitedBy: args.invitedBy,
         expiresAt: Date.now() + (args.expiresInDays || 7) * 24 * 60 * 60 * 1000,
       });
-      return existingInvite._id;
+      return { inviteId: existingInvite._id, token: existingInvite.token };
     }
 
     // Create new invite
