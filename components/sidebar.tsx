@@ -48,6 +48,23 @@ export const Sidebar = ({ selectedChannelId, onSelectChannel }: SidebarProps) =>
     const conversations = useQuery(api.functions.chat.queries.getConversations,
         workspaceId && session.data?.user.id ? { workspaceId, userId: session.data.user.id } : "skip"
     );
+    const unreadCounts = useQuery(api.functions.chat.queries.getUnreadCounts,
+        workspaceId && session.data?.user.id ? { workspaceId, userId: session.data.user.id } : "skip"
+    );
+
+    const getChannelUnreadCount = (channelId: string) => {
+        return unreadCounts?.channels.find((c: any) => c.id === channelId)?.count || 0;
+    };
+
+    const getDMUnreadCount = (sessionId: string) => {
+        if (!conversations || !unreadCounts) return 0;
+        const conversation = conversations.find((c: any) =>
+            (c.userOneId === session.data?.user.id && c.userTwoId === sessionId) ||
+            (c.userTwoId === session.data?.user.id && c.userOneId === sessionId)
+        );
+        if (!conversation) return 0;
+        return unreadCounts.conversations.find((c: any) => c.id === conversation._id)?.count || 0;
+    };
 
     const handleAddChannel = () => {
         setIsCreateChannelOpen(true);
@@ -73,10 +90,20 @@ export const Sidebar = ({ selectedChannelId, onSelectChannel }: SidebarProps) =>
     };
 
     const isActiveUser = (userId: string) => {
-        if (!selectedChannelId || !conversations) return false;
+        if (!selectedChannelId || !conversations || !session.data?.user.id) return false;
+
         const activeConversation = (conversations as any[]).find((c: any) => c._id === selectedChannelId);
         if (!activeConversation) return false;
-        return activeConversation.userOneId === userId || activeConversation.userTwoId === userId;
+
+        const currentUserId = session.data.user.id;
+
+        // If it's a self-conversation, highlight if the userId is the current user
+        if (activeConversation.userOneId === activeConversation.userTwoId) {
+            return userId === currentUserId;
+        }
+
+        // For conversations with others, only highlight the other user
+        return userId !== currentUserId && (activeConversation.userOneId === userId || activeConversation.userTwoId === userId);
     };
 
     return (
@@ -118,7 +145,17 @@ export const Sidebar = ({ selectedChannelId, onSelectChannel }: SidebarProps) =>
                                 ) : (
                                     <Hash className="size-4 shrink-0 opacity-70" />
                                 )}
-                                <span className="truncate">{channel.name}</span>
+                                <span className={cn(
+                                    "truncate",
+                                    getChannelUnreadCount(channel._id) > 0 && "font-bold text-white"
+                                )}>
+                                    {channel.name}
+                                </span>
+                                {getChannelUnreadCount(channel._id) > 0 && (
+                                    <span className="ml-auto bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                                        {getChannelUnreadCount(channel._id)}
+                                    </span>
+                                )}
                             </button>
                         ))}
                         {channels === undefined && (
@@ -181,8 +218,18 @@ export const Sidebar = ({ selectedChannelId, onSelectChannel }: SidebarProps) =>
                                         <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-500 border border-[#3F0E40]"></div>
                                     )}
                                 </div>
-                                <span className="truncate opacity-90">{user.name}</span>
+                                <span className={cn(
+                                    "truncate opacity-90",
+                                    getDMUnreadCount(user.sessionId) > 0 && "font-bold text-white opacity-100"
+                                )}>
+                                    {user.name}
+                                </span>
                                 {user.sessionId === session.data?.user.id && <span className="text-xs opacity-50 ml-1">(you)</span>}
+                                {getDMUnreadCount(user.sessionId) > 0 && (
+                                    <span className="ml-auto bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                                        {getDMUnreadCount(user.sessionId)}
+                                    </span>
+                                )}
                             </button>
                         ))}
                     </div>

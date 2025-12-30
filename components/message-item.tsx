@@ -34,6 +34,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { authClient } from "@/lib/auth-client";
+import { AudioPlayer } from "./audio-player";
 
 interface Reaction {
     emoji: string;
@@ -151,7 +152,9 @@ export const MessageItem = ({
                     <div className="flex flex-wrap gap-2 mt-2">
                         {attachments.map((file) => (
                             <div key={file.storageId} className="max-w-[300px]">
-                                {file.type.startsWith("image/") ? (
+                                {file.type.startsWith("audio/") ? (
+                                    <AudioPlayer url={file.url || ""} />
+                                ) : file.type.startsWith("image/") ? (
                                     <div className="relative rounded-lg overflow-hidden border border-gray-200 bg-gray-50 group/img">
                                         <img
                                             src={file.url}

@@ -108,4 +108,13 @@ export default defineSchema({
     .index("by_workspace", ["workspaceId"])
     .index("by_email", ["email"])
     .index("by_token", ["token"]),
+
+  userReadStatus: defineTable({
+    userId: v.string(),
+    channelId: v.optional(v.id("channels")),
+    conversationId: v.optional(v.id("conversations")),
+    lastReadAt: v.number(),
+  })
+    .index("by_user_channel", ["userId", "channelId"])
+    .index("by_user_conversation", ["userId", "conversationId"]),
 });

@@ -1,21 +1,27 @@
 "use client";
 
-import { Search, Info, History, LogOut } from "lucide-react";
+import { Search, Info, History, LogOut, Bell, Volume2, Waves } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useNotifications } from "@/hooks/use-notifications";
+import { cn } from "@/lib/utils";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
+    DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 
 export const Navbar = () => {
     const router = useRouter();
     const session = authClient.useSession();
     const user = session.data?.user;
+
+    const { settings, updateSettings, requestPermission } = useNotifications();
 
     const handleSignOut = async () => {
         await authClient.signOut();
@@ -55,10 +61,41 @@ export const Navbar = () => {
                             </AvatarFallback>
                         </Avatar>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel className="text-xs">Account</DropdownMenuLabel>
                         <DropdownMenuItem onClick={handleSignOut} className="text-red-600 cursor-pointer">
                             <LogOut className="size-4 mr-2" />
                             Sign Out
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel className="text-xs">Notifications</DropdownMenuLabel>
+                        <DropdownMenuItem
+                            onClick={() => updateSettings({ sound: !settings.sound })}
+                            className="flex items-center justify-between"
+                        >
+                            <div className="flex items-center">
+                                <Volume2 className={cn("size-4 mr-2", !settings.sound && "text-gray-400")} />
+                                Sound
+                            </div>
+                            <span className="text-[10px] uppercase font-bold text-gray-400">
+                                {settings.sound ? "On" : "Off"}
+                            </span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => updateSettings({ vibration: !settings.vibration })}
+                            className="flex items-center justify-between"
+                        >
+                            <div className="flex items-center">
+                                <Waves className={cn("size-4 mr-2", !settings.vibration && "text-gray-400")} />
+                                Vibration
+                            </div>
+                            <span className="text-[10px] uppercase font-bold text-gray-400">
+                                {settings.vibration ? "On" : "Off"}
+                            </span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => requestPermission()}>
+                            <Bell className="size-4 mr-2" />
+                            Enable Desktop Alerts
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>

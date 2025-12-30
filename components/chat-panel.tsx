@@ -1,9 +1,11 @@
-import { useState } from 'react';
+"use client";
+
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { Id } from '@/convex/_generated/dataModel';
-import { Hash, Info, Menu, X, Lock, Users } from 'lucide-react';
+import { Hash, Info, Menu, Lock, Users } from 'lucide-react';
 import { MessageItem } from './message-item';
 import { Button } from './ui/button';
 import MessageInput from './message-input';
@@ -11,6 +13,8 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './ui/resiz
 import { ThreadPanel } from './thread-panel';
 import { ChannelMembersDialog } from './channel-members-dialog';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 interface ChatPanelProps {
     id: string; // Can be channelId or conversationId/sessionId
@@ -45,6 +49,19 @@ export const ChatPanel = ({ id, type, onOpenSidebar }: ChatPanelProps) => {
     const toggleReaction = useMutation(api.functions.chat.mutations.toggleReaction);
     const removeMember = useMutation(api.functions.channels.mutations.removeChannelMember);
     const deleteMessage = useMutation(api.functions.chat.mutations.deleteMessage);
+    const markAsRead = useMutation(api.functions.chat.mutations.markAsRead);
+
+    const isMobile = useIsMobile();
+
+    useEffect(() => {
+        if (session.data?.user.id && id) {
+            markAsRead({
+                userId: session.data.user.id,
+                channelId: isChannel ? id as Id<"channels"> : undefined,
+                conversationId: !isChannel ? id as Id<"conversations"> : undefined,
+            });
+        }
+    }, [id, isChannel, session.data?.user.id, markAsRead]);
 
     const handleSend = async (text: string, attachments?: any[], linkPreviews?: any[]) => {
         if (session.data?.user.id) {
@@ -92,114 +109,145 @@ export const ChatPanel = ({ id, type, onOpenSidebar }: ChatPanelProps) => {
         return now - lastSeen < fiveMinutes;
     };
 
-    return (
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-            <ResizablePanel defaultSize={threadMessageId ? 70 : 100} minSize={40}>
-                <div className="flex flex-col h-full bg-white">
-                    <div className="h-[49px] border-b border-gray-200 flex items-center justify-between px-4 shrink-0 bg-white">
-                        <div className="flex items-center gap-1 overflow-hidden min-w-0 flex-1">
-                            <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                className="md:hidden mr-1 shrink-0 hover:bg-gray-100"
-                                onClick={onOpenSidebar}
-                            >
-                                <Menu className="size-5 text-gray-700" />
-                            </Button>
-                            <div className="flex items-center px-2 py-1 min-w-0 flex-1">
-                                {isChannel ? (
-                                    channel?.isPrivate ? <Lock className="size-5 mr-1.5 text-gray-500 shrink-0" /> : <Hash className="size-5 mr-1.5 text-gray-500 shrink-0" />
-                                ) : (
-                                    <div className={cn(
-                                        "size-3 mr-2 rounded-full shrink-0 border-2 border-white",
-                                        isOnline(otherMember?.lastSeen) ? "bg-green-500" : "bg-gray-300"
-                                    )} />
-                                )}
-                                <span className="truncate font-bold text-gray-900 text-base">
-                                    {isChannel ? channel?.name : (otherMember?.name || "Direct Message")}
-                                </span>
-                            </div>
-                            <span className="hidden md:block text-xs text-gray-500 pl-3 border-l border-gray-300 ml-3 h-4 truncate">
-                                {isChannel ? (channel?.description || "Add a topic") : "Direct message history"}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                            {isChannel && (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-gray-500 hover:bg-gray-100 hidden sm:flex"
-                                    onClick={() => setIsMembersOpen(true)}
-                                    title="Manage members"
-                                >
-                                    <Users className="size-5" />
-                                </Button>
-                            )}
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-gray-500 hover:bg-gray-100 hidden sm:flex"
-                            >
-                                <Info className="size-5" />
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                className="text-gray-500 hover:bg-gray-100 sm:hidden"
-                            >
-                                <Info className="size-4" />
-                            </Button>
-                        </div>
+    const mainContent = (
+        <div className="flex flex-col h-full bg-white">
+            <div className="h-[49px] border-b border-gray-200 flex items-center justify-between px-4 shrink-0 bg-white">
+                <div className="flex items-center gap-1 overflow-hidden min-w-0 flex-1">
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="md:hidden mr-1 shrink-0 hover:bg-gray-100"
+                        onClick={onOpenSidebar}
+                    >
+                        <Menu className="size-5 text-gray-700" />
+                    </Button>
+                    <div className="flex items-center px-2 py-1 min-w-0 flex-1">
+                        {isChannel ? (
+                            channel?.isPrivate ? <Lock className="size-5 mr-1.5 text-gray-500 shrink-0" /> : <Hash className="size-5 mr-1.5 text-gray-500 shrink-0" />
+                        ) : (
+                            <div className={cn(
+                                "size-3 mr-2 rounded-full shrink-0 border-2 border-white",
+                                isOnline(otherMember?.lastSeen) ? "bg-green-500" : "bg-gray-300"
+                            )} />
+                        )}
+                        <span className="truncate font-bold text-gray-900 text-base">
+                            {isChannel ? channel?.name : (otherMember?.name || "Direct Message")}
+                        </span>
                     </div>
-                    <div className="flex-1 overflow-y-auto flex flex-col-reverse px-4 py-2">
-                        <div className="flex flex-col">
-                            {messages?.map((message) => (
-                                <MessageItem
-                                    key={message._id}
-                                    id={message._id}
-                                    name={message.userName}
-                                    text={message.text}
-                                    createdAt={message._creationTime}
-                                    isAuthor={message.userId === session.data?.user.id}
-                                    userImage={message.userImage}
-                                    reactions={message.reactions}
-                                    attachments={message.attachments}
-                                    linkPreviews={message.linkPreviews}
-                                    replyCount={message.replyCount}
-                                    onThreadOpen={(id) => setThreadMessageId(id as Id<"messages">)}
-                                    onReactionToggle={(emoji) => handleReactionToggle(message._id, emoji)}
-                                    onDelete={handleDelete}
-                                />
-                            ))}
-                            {messages?.length === 0 && (
-                                <div className="flex items-center justify-center p-10 text-gray-500 text-sm">
-                                    No messages yet. Start the conversation!
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    <div className="border-t border-gray-200 bg-white">
-                        <MessageInput
-                            placeholder={isChannel ? `Message #${channel?.name || "..."}` : `Message ${otherMember?.name || "Direct Message"}`}
-                            onSubmit={handleSend}
-                            workspaceId={channel?.workspaceId}
-                        />
-                    </div>
+                    <span className="hidden md:block text-xs text-gray-500 pl-3 border-l border-gray-300 ml-3 h-4 truncate">
+                        {isChannel ? (channel?.description || "Add a topic") : "Direct message history"}
+                    </span>
                 </div>
-            </ResizablePanel>
-
-            {threadMessageId && (
-                <>
-                    <ResizableHandle className="w-1 bg-gray-200 hover:bg-sky-500 transition-colors" />
-                    <ResizablePanel defaultSize={30} minSize={25}>
-                        <ThreadPanel
-                            parentMessageId={threadMessageId}
-                            workspaceId={channel?.workspaceId as Id<"workspaces">}
-                            onClose={() => setThreadMessageId(null)}
+                <div className="flex items-center gap-1 shrink-0">
+                    {isChannel && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-gray-500 hover:bg-gray-100 hidden sm:flex"
+                            onClick={() => setIsMembersOpen(true)}
+                            title="Manage members"
+                        >
+                            <Users className="size-5" />
+                        </Button>
+                    )}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-gray-500 hover:bg-gray-100"
+                    >
+                        <Info className="size-5" />
+                    </Button>
+                </div>
+            </div>
+            <div className="flex-1 overflow-y-auto flex flex-col-reverse px-4 py-2">
+                <div className="flex flex-col">
+                    {messages?.map((message) => (
+                        <MessageItem
+                            key={message._id}
+                            id={message._id}
+                            name={message.userName}
+                            text={message.text}
+                            createdAt={message._creationTime}
+                            isAuthor={message.userId === session.data?.user.id}
+                            userImage={message.userImage}
+                            reactions={message.reactions}
+                            attachments={message.attachments}
+                            linkPreviews={message.linkPreviews}
+                            replyCount={message.replyCount}
+                            onThreadOpen={(id) => setThreadMessageId(id as Id<"messages">)}
+                            onReactionToggle={(emoji) => handleReactionToggle(message._id, emoji)}
+                            onDelete={handleDelete}
                         />
-                    </ResizablePanel>
-                </>
-            )}
+                    ))}
+                    {messages?.length === 0 && (
+                        <div className="flex items-center justify-center p-10 text-gray-500 text-sm">
+                            No messages yet. Start the conversation!
+                        </div>
+                    )}
+                </div>
+            </div>
+            <div className="border-t border-gray-200 bg-white">
+                <MessageInput
+                    placeholder={isChannel ? `Message #${channel?.name || "..."}` : `Message ${otherMember?.name || "Direct Message"}`}
+                    onSubmit={handleSend}
+                    workspaceId={channel?.workspaceId}
+                />
+            </div>
+        </div>
+    );
+
+    if (isMobile) {
+        return (
+            <div className="h-full relative overflow-hidden">
+                {mainContent}
+                {threadMessageId && (
+                    <Sheet open={!!threadMessageId} onOpenChange={() => setThreadMessageId(null)}>
+                        <SheetContent side="right" className="p-0 border-none w-full sm:max-w-md">
+                            <SheetHeader className="sr-only">
+                                <SheetTitle>Message Thread</SheetTitle>
+                                <SheetDescription>
+                                    View and reply to this message thread
+                                </SheetDescription>
+                            </SheetHeader>
+                            <ThreadPanel
+                                parentMessageId={threadMessageId}
+                                workspaceId={channel?.workspaceId as Id<"workspaces">}
+                                onClose={() => setThreadMessageId(null)}
+                            />
+                        </SheetContent>
+                    </Sheet>
+                )}
+                {isChannel && (
+                    <ChannelMembersDialog
+                        open={isMembersOpen}
+                        onOpenChange={setIsMembersOpen}
+                        channelId={id as Id<"channels">}
+                    />
+                )}
+            </div>
+        );
+    }
+
+    return (
+        <>
+            <ResizablePanelGroup direction="horizontal" className="h-full">
+                <ResizablePanel defaultSize={threadMessageId ? 70 : 100} minSize={40}>
+                    {mainContent}
+                </ResizablePanel>
+
+                {threadMessageId && (
+                    <>
+                        <ResizableHandle className="w-1 bg-gray-200 hover:bg-sky-500 transition-colors" />
+                        <ResizablePanel defaultSize={30} minSize={25}>
+                            <ThreadPanel
+                                parentMessageId={threadMessageId}
+                                workspaceId={channel?.workspaceId as Id<"workspaces">}
+                                onClose={() => setThreadMessageId(null)}
+                            />
+                        </ResizablePanel>
+                    </>
+                )}
+            </ResizablePanelGroup>
 
             {isChannel && (
                 <ChannelMembersDialog
@@ -208,6 +256,6 @@ export const ChatPanel = ({ id, type, onOpenSidebar }: ChatPanelProps) => {
                     channelId={id as Id<"channels">}
                 />
             )}
-        </ResizablePanelGroup>
+        </>
     );
 };

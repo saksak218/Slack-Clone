@@ -85,7 +85,7 @@ export const ThreadPanel = ({ parentMessageId, workspaceId, onClose }: ThreadPan
                         {parentMessage.channelId ? `in #${parentMessage.channelId.slice(0, 4)}...` : "in Direct Message"}
                     </span>
                 </div>
-                <Button variant="ghost" size="icon-sm" className="hover:bg-gray-100" onClick={onClose}>
+                <Button variant="ghost" size="icon-sm" className="hidden md:flex hover:bg-gray-100" onClick={onClose}>
                     <X className="size-5 text-gray-500" />
                 </Button>
             </div>

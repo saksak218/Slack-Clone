@@ -10,7 +10,7 @@ import {
 import { Sidebar } from "@/components/sidebar";
 import { ChatPanel } from "@/components/chat-panel";
 import { Id } from "@/convex/_generated/dataModel";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { authClient } from "@/lib/auth-client";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -87,6 +87,12 @@ export default function Home() {
                     {/* Mobile Sidebar */}
                     <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
                         <SheetContent side="left" className="w-[280px] p-0 bg-[#3F0E40] border-r border-[#616061]/20">
+                            <SheetHeader className="sr-only">
+                                <SheetTitle>Navigation Menu</SheetTitle>
+                                <SheetDescription>
+                                    Browse channels and direct messages
+                                </SheetDescription>
+                            </SheetHeader>
                             <Sidebar
                                 selectedChannelId={selectedChannelId || undefined}
                                 onSelectChannel={(id, type) => {
@@ -109,7 +115,10 @@ export default function Home() {
                             >
                                 <Sidebar
                                     selectedChannelId={selectedChannelId || undefined}
-                                    onSelectChannel={(id) => setSelectedChannelId(id)}
+                                    onSelectChannel={(id, type) => {
+                                        setSelectedChannelId(id);
+                                        setSelectedType(type);
+                                    }}
                                 />
                             </ResizablePanel>
 

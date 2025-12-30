@@ -118,3 +118,41 @@ export const deleteMessage = mutation({
     await ctx.db.delete(args.messageId);
   },
 });
+
+export const markAsRead = mutation({
+  args: {
+    userId: v.string(),
+    channelId: v.optional(v.id("channels")),
+    conversationId: v.optional(v.id("conversations")),
+  },
+  handler: async (ctx, args) => {
+    const existing = args.channelId
+      ? await ctx.db
+          .query("userReadStatus")
+          .withIndex("by_user_channel", (q) =>
+            q.eq("userId", args.userId).eq("channelId", args.channelId),
+          )
+          .first()
+      : await ctx.db
+          .query("userReadStatus")
+          .withIndex("by_user_conversation", (q) =>
+            q
+              .eq("userId", args.userId)
+              .eq("conversationId", args.conversationId),
+          )
+          .first();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        lastReadAt: Date.now(),
+      });
+    } else {
+      await ctx.db.insert("userReadStatus", {
+        userId: args.userId,
+        channelId: args.channelId,
+        conversationId: args.conversationId,
+        lastReadAt: Date.now(),
+      });
+    }
+  },
+});

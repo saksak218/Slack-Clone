@@ -202,3 +202,58 @@ export const getConversations = query({
     );
   },
 });
+
+export const getUnreadCounts = query({
+  args: {
+    workspaceId: v.id("workspaces"),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const channels = await ctx.db
+      .query("channels")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+      .collect();
+
+    const conversations = await ctx.db
+      .query("conversations")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+      .collect();
+
+    const userConversations = conversations.filter(
+      (c) => c.userOneId === args.userId || c.userTwoId === args.userId,
+    );
+
+    const readStatuses = await ctx.db
+      .query("userReadStatus")
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .collect();
+
+    const channelCounts = await Promise.all(
+      channels.map(async (c) => {
+        const status = readStatuses.find((s) => s.channelId === c._id);
+        const lastRead = status?.lastReadAt || 0;
+        const unreadMessages = await ctx.db
+          .query("messages")
+          .withIndex("by_channel", (q) => q.eq("channelId", c._id))
+          .filter((q) => q.gt(q.field("_creationTime"), lastRead))
+          .collect();
+        return { id: c._id, count: unreadMessages.length };
+      }),
+    );
+
+    const DMCounts = await Promise.all(
+      userConversations.map(async (c) => {
+        const status = readStatuses.find((s) => s.conversationId === c._id);
+        const lastRead = status?.lastReadAt || 0;
+        const unreadMessages = await ctx.db
+          .query("messages")
+          .withIndex("by_conversation", (q) => q.eq("conversationId", c._id))
+          .filter((q) => q.gt(q.field("_creationTime"), lastRead))
+          .collect();
+        return { id: c._id, count: unreadMessages.length };
+      }),
+    );
+
+    return { channels: channelCounts, conversations: DMCounts };
+  },
+});
