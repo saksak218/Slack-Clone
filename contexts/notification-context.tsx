@@ -78,14 +78,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }, [updateSettings]);
 
     const toggleNativeNotifications = useCallback(async () => {
-        if (!permissionGranted) {
-            return await requestPermission();
-        } else {
-            const newValue = !settingsRef.current.native;
-            updateSettings({ native: newValue });
-            return newValue;
+        // If permission is not granted, request it
+        if (Notification.permission !== "granted") {
+            const granted = await requestPermission();
+            return granted;
         }
-    }, [permissionGranted, requestPermission, updateSettings]);
+
+        // Permission is granted, so just toggle the setting
+        const newValue = !settingsRef.current.native;
+        updateSettings({ native: newValue });
+        setPermissionGranted(true);
+        return newValue;
+    }, [requestPermission, updateSettings]);
 
     const playSound = useCallback(() => {
         if (!settingsRef.current.sound) return;
