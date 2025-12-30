@@ -17,8 +17,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Slack Clone",
   description: "Work simplified with Slack Clone",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Slack Clone",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   icons: {
     icon: "/slack.svg",
+    apple: "/slack.svg",
   },
 };
 

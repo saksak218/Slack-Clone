@@ -1,0 +1,31 @@
+{
+  "name": "Slack Clone",
+  "short_name": "Slack",
+  "description": "Work simplified with Slack Clone",
+  "categories": ["productivity", "communication"],
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#3F0E40",
+  "theme_color": "#3F0E40",
+  "icons": [
+    {
+      "src": "/slack.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/slack.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/slack.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
