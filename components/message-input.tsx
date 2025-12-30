@@ -3,7 +3,7 @@
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import React from 'react';
-import { Plus, SendHorizonal } from 'lucide-react';
+import { Plus, SendHorizonal, File, Image as ImageIcon, X } from 'lucide-react';
 import MenuBar from './menu-bar';
 import Link from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
@@ -16,28 +16,55 @@ import {
     FormControl,
     FormField,
     FormItem,
-    FormMessage,
 } from "./ui/form"
+import dynamic from 'next/dynamic';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+import { useAction } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { Id } from '@/convex/_generated/dataModel';
+
+// Dynamic import for emoji picker to avoid SSR issues
+const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false });
 
 const formSchema = z.object({
-    message: z.string().min(1, {
-        message: "Message cannot be empty.",
-    }),
+    message: z.string().optional(),
 })
+
+interface Attachment {
+    storageId: string;
+    name: string;
+    type: string;
+}
 
 interface MessageInputProps {
     placeholder?: string;
-    onSubmit?: (content: string) => void;
+    onSubmit?: (content: string, attachments?: Attachment[], linkPreviews?: any[]) => void;
+    defaultValue?: string;
+    workspaceId?: Id<"workspaces">;
 }
 
-const MessageInput = ({ placeholder = "Message", onSubmit }: MessageInputProps) => {
+const MessageInput = ({ placeholder = "Message", onSubmit, defaultValue = "" }: MessageInputProps) => {
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const [attachments, setAttachments] = React.useState<Attachment[]>([]);
+    const [linkPreviews, setLinkPreviews] = React.useState<any[]>([]);
+    const [isUploading, setIsUploading] = React.useState(false);
+
+    const generateUploadUrl = useAction(api.functions.chat.actions.generateUploadUrl);
+    const unfurlLink = useAction(api.functions.chat.actions.unfurlLink);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            message: "",
+            message: defaultValue,
         },
     })
+
+    // Check if form is valid (either message or attachments)
+    const isValid = form.watch("message")?.trim() || attachments.length > 0;
 
     const editor = useEditor({
         extensions: [
@@ -64,7 +91,7 @@ const MessageInput = ({ placeholder = "Message", onSubmit }: MessageInputProps) 
                 emptyEditorClass: 'is-editor-empty',
             }),
         ],
-        content: '',
+        content: defaultValue,
         immediatelyRender: false,
         editorProps: {
             attributes: {
@@ -74,16 +101,74 @@ const MessageInput = ({ placeholder = "Message", onSubmit }: MessageInputProps) 
         onUpdate: ({ editor }) => {
             const value = editor.isEmpty ? "" : editor.getHTML();
             form.setValue("message", value, { shouldValidate: true });
+
+            const urls = editor.getHTML().match(/href="([^"]+)"/g)?.map(m => m.match(/href="([^"]+)"/)?.[1]) || [];
+            urls.forEach(url => {
+                if (url && !linkPreviews.some(p => p.url === url)) {
+                    handleUnfurl(url);
+                }
+            });
         }
     });
 
+    const handleUnfurl = async (url: string) => {
+        try {
+            const preview = await unfurlLink({ url });
+            if (preview) {
+                setLinkPreviews(prev => {
+                    if (prev.some(p => p.url === url)) return prev;
+                    return [...prev, preview];
+                });
+            }
+        } catch (error) {
+            console.error("Unfurl failed:", error);
+        }
+    };
+
+    const onEmojiClick = (emojiData: any) => {
+        editor?.chain().focus().insertContent(emojiData.emoji).run();
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        try {
+            const postUrl = await generateUploadUrl();
+            const result = await fetch(postUrl, {
+                method: "POST",
+                headers: { "Content-Type": file.type },
+                body: file,
+            });
+            const { storageId } = await result.json();
+
+            setAttachments(prev => [...prev, {
+                storageId,
+                name: file.name,
+                type: file.type,
+            }]);
+        } catch (error) {
+            console.error("Upload failed:", error);
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    };
+
+    const removeAttachment = (storageId: string) => {
+        setAttachments(prev => prev.filter(a => a.storageId !== storageId));
+    };
+
     const onSubmitHandler = React.useCallback((values: z.infer<typeof formSchema>) => {
-        if (onSubmit) {
-            onSubmit(values.message);
+        if (onSubmit && (values.message || attachments.length > 0)) {
+            onSubmit(values.message || "", attachments as any, linkPreviews);
             form.reset();
+            setAttachments([]);
+            setLinkPreviews([]);
             editor?.commands.clearContent();
         }
-    }, [onSubmit, form, editor]);
+    }, [onSubmit, form, editor, attachments, linkPreviews]);
 
     React.useEffect(() => {
         if (!editor) return;
@@ -134,6 +219,73 @@ const MessageInput = ({ placeholder = "Message", onSubmit }: MessageInputProps) 
                                     <FormControl>
                                         <div className="px-3 py-2">
                                             <EditorContent editor={editor} />
+
+                                            {/* Attachment Previews */}
+                                            {attachments.length > 0 && (
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    {attachments.map((file) => (
+                                                        <div
+                                                            key={file.storageId}
+                                                            className="relative group bg-gray-50 border border-gray-200 rounded-md p-2 flex items-center gap-2 max-w-[200px]"
+                                                        >
+                                                            {file.type.startsWith("image/") ? (
+                                                                <ImageIcon className="size-4 text-sky-600 shrink-0" />
+                                                            ) : (
+                                                                <File className="size-4 text-gray-500 shrink-0" />
+                                                            )}
+                                                            <span className="text-xs truncate text-gray-700">
+                                                                {file.name}
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeAttachment(file.storageId)}
+                                                                className="absolute -top-2 -right-2 bg-gray-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                <X size={10} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {linkPreviews.length > 0 && (
+                                                <div className="flex flex-col gap-2 mt-2">
+                                                    {linkPreviews.map((preview) => (
+                                                        <div
+                                                            key={preview.url}
+                                                            className="relative group bg-gray-50 border border-gray-200 rounded-md p-3 flex gap-3 max-w-full"
+                                                        >
+                                                            {preview.image && (
+                                                                <img
+                                                                    src={preview.image}
+                                                                    alt=""
+                                                                    className="size-16 rounded object-cover shrink-0"
+                                                                />
+                                                            )}
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="text-xs font-bold text-gray-900 truncate">
+                                                                    {preview.title || preview.url}
+                                                                </p>
+                                                                {preview.description && (
+                                                                    <p className="text-[10px] text-gray-500 line-clamp-2 mt-0.5">
+                                                                        {preview.description}
+                                                                    </p>
+                                                                )}
+                                                                <p className="text-[10px] text-blue-600 truncate mt-1">
+                                                                    {preview.url}
+                                                                </p>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setLinkPreviews(prev => prev.filter(p => p.url !== preview.url))}
+                                                                className="absolute -top-2 -right-2 bg-gray-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-0.5"
+                                                            >
+                                                                <X size={10} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </FormControl>
                                 </FormItem>
@@ -142,32 +294,39 @@ const MessageInput = ({ placeholder = "Message", onSubmit }: MessageInputProps) 
 
                         <div className="flex items-center justify-between px-3 py-2">
                             <div className="flex items-center gap-1 text-gray-500">
-                                <button 
-                                    type="button" 
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileUpload}
+                                    className="hidden"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
                                     className="p-1.5 rounded hover:bg-gray-100 transition-colors"
                                     title="Add attachment"
                                 >
                                     <Plus size={18} />
                                 </button>
-                                <button 
-                                    type="button" 
-                                    className="p-1.5 rounded hover:bg-gray-100 transition-colors"
-                                    title="Add emoji"
-                                >
-                                    <span className="text-lg">😊</span>
-                                </button>
-                                <button 
-                                    type="button" 
-                                    className="p-1.5 rounded hover:bg-gray-100 transition-colors"
-                                    title="Mention someone"
-                                >
-                                    <span className="text-lg">@</span>
-                                </button>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <button
+                                            type="button"
+                                            className="p-1.5 rounded hover:bg-gray-100 transition-colors"
+                                            title="Add emoji"
+                                        >
+                                            <span className="text-lg">😊</span>
+                                        </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-full p-0 border-none" side="top" align="start">
+                                        <EmojiPicker onEmojiClick={onEmojiClick} />
+                                    </PopoverContent>
+                                </Popover>
                             </div>
                             <button
                                 type="submit"
                                 className="bg-[#2EB67D] hover:bg-[#2A9D6F] flex items-center gap-x-2 text-white h-7 px-3 py-1 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                disabled={!form.formState.isValid || form.formState.isSubmitting}
+                                disabled={!isValid || form.formState.isSubmitting || isUploading}
                             >
                                 <SendHorizonal size={16} />
                             </button>

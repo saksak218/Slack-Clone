@@ -35,7 +35,7 @@ export default function InviteAcceptPage() {
             setSuccess(true);
             // Store workspace in sessionStorage and redirect
             sessionStorage.setItem("selectedWorkspaceId", result.workspaceId);
-            
+
             setTimeout(() => {
                 router.push("/");
                 router.refresh();
@@ -86,6 +86,23 @@ export default function InviteAcceptPage() {
         );
     }
 
+    if (success || (invite && invite.isMember)) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+                <Card className="p-8 max-w-md w-full text-center">
+                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                    <h1 className="text-2xl font-bold mb-4">Welcome to {invite?.workspace?.name || "Workspace"}!</h1>
+                    <p className="text-gray-600 mb-6">
+                        {invite?.isMember
+                            ? "You are already a member of this workspace. Redirecting..."
+                            : "You've successfully joined the workspace. Redirecting..."}
+                    </p>
+                    <Loader2 className="w-6 h-6 animate-spin text-purple-600 mx-auto" />
+                </Card>
+            </div>
+        );
+    }
+
     const isExpired = invite && (invite.status === "expired" || (invite.expiresAt < Date.now() && invite.status === "pending"));
     const isAccepted = invite && invite.status === "accepted";
 
@@ -99,8 +116,8 @@ export default function InviteAcceptPage() {
                         {isExpired
                             ? "This invitation has expired."
                             : isAccepted
-                            ? "This invitation has already been accepted."
-                            : "This invitation link is invalid."}
+                                ? "This invitation has already been accepted."
+                                : "This invitation link is invalid."}
                     </p>
                 </Card>
             </div>
@@ -126,21 +143,6 @@ export default function InviteAcceptPage() {
                     <p className="text-sm text-gray-500 mt-4">
                         Please sign in with the email address the invitation was sent to.
                     </p>
-                </Card>
-            </div>
-        );
-    }
-
-    if (success) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-                <Card className="p-8 max-w-md w-full text-center">
-                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                    <h1 className="text-2xl font-bold mb-4">Welcome to {invite.workspace?.name}!</h1>
-                    <p className="text-gray-600 mb-6">
-                        You've successfully joined the workspace. Redirecting...
-                    </p>
-                    <Loader2 className="w-6 h-6 animate-spin text-purple-600 mx-auto" />
                 </Card>
             </div>
         );

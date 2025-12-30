@@ -15,10 +15,14 @@ import {
 import { Editor } from "@tiptap/react";
 import { Toggle } from "./ui/toggle";
 import { useEffect, useState } from "react";
+import { LinkDialog } from "./link-dialog";
 
 export default function MenuBar({ editor }: { editor: Editor | null }) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [_, forceUpdate] = useState({});
+    const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+    const [linkInitialTitle, setLinkInitialTitle] = useState("");
+    const [linkInitialUrl, setLinkInitialUrl] = useState("");
 
     useEffect(() => {
         if (!editor) return;
@@ -66,19 +70,13 @@ export default function MenuBar({ editor }: { editor: Editor | null }) {
         {
             icon: <LinkIcon className="size-4" />,
             onClick: () => {
-                const previousUrl = editor.getAttributes('link').href
-                const url = window.prompt('URL', previousUrl)
+                const { from, to } = editor.state.selection;
+                const selectionText = editor.state.doc.textBetween(from, to, ' ');
+                const previousUrl = editor.getAttributes('link').href;
 
-                if (url === null) {
-                    return
-                }
-
-                if (url === '') {
-                    editor.chain().focus().extendMarkRange('link').unsetLink().run()
-                    return
-                }
-
-                editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+                setLinkInitialTitle(selectionText || "");
+                setLinkInitialUrl(previousUrl || "");
+                setIsLinkDialogOpen(true);
             },
             pressed: editor.isActive("link"),
         },
@@ -111,6 +109,28 @@ export default function MenuBar({ editor }: { editor: Editor | null }) {
 
 
 
+    const handleLinkConfirm = (title: string, url: string) => {
+        if (!editor) return;
+
+        if (url === "") {
+            editor.chain().focus().extendMarkRange("link").unsetLink().run();
+            return;
+        }
+
+        const { from, to } = editor.state.selection;
+
+        if (from === to) {
+            editor.chain().focus().insertContent(`<a href="${url}">${title || url}</a> `).run();
+        } else {
+            const selectionText = editor.state.doc.textBetween(from, to, " ");
+            if (title && title !== selectionText) {
+                editor.chain().focus().insertContent(`<a href="${url}">${title}</a>`).run();
+            } else {
+                editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+            }
+        }
+    };
+
     return (
         <div className="flex items-center gap-0.5 p-1 bg-transparent">
             {options.map((option, index) => (
@@ -124,6 +144,14 @@ export default function MenuBar({ editor }: { editor: Editor | null }) {
                     {option.icon}
                 </Toggle>
             ))}
+
+            <LinkDialog
+                open={isLinkDialogOpen}
+                onOpenChange={setIsLinkDialogOpen}
+                onConfirm={handleLinkConfirm}
+                initialTitle={linkInitialTitle}
+                initialUrl={linkInitialUrl}
+            />
         </div>
     );
 }

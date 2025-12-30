@@ -2,11 +2,12 @@ import { v } from "convex/values";
 import { mutation, query } from "../../_generated/server";
 import { Id } from "../../_generated/dataModel";
 
-// Generate a unique invite token
 function generateInviteToken(): string {
-  return Math.random().toString(36).substring(2, 15) + 
-         Math.random().toString(36).substring(2, 15) +
-         Date.now().toString(36);
+  return (
+    Math.random().toString(36).substring(2, 15) +
+    Math.random().toString(36).substring(2, 15) +
+    Date.now().toString(36)
+  );
 }
 
 export const createInvite = mutation({
@@ -18,31 +19,26 @@ export const createInvite = mutation({
     expiresInDays: v.optional(v.number()), // Default 7 days
   },
   handler: async (ctx, args) => {
-    // Check if user is already a member
     const existingMember = await ctx.db
       .query("workspaceMembers")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
       .filter((q) => {
-        // Need to check if user with this email exists and is a member
         return q.eq(q.field("workspaceId"), args.workspaceId);
       })
       .collect();
 
-    // Check if user exists with this email
     const user = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
 
     if (user) {
-      // Check if user is already a member
       const isMember = existingMember.some((m) => m.userId === user.sessionId);
       if (isMember) {
         throw new Error("User is already a member of this workspace");
       }
     }
 
-    // Check for existing pending invite
     const existingInvite = await ctx.db
       .query("workspaceInvites")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
@@ -51,17 +47,26 @@ export const createInvite = mutation({
       .first();
 
     if (existingInvite) {
-      // Update existing invite
       await ctx.db.patch(existingInvite._id, {
         role: args.role,
         invitedBy: args.invitedBy,
         expiresAt: Date.now() + (args.expiresInDays || 7) * 24 * 60 * 60 * 1000,
       });
-      return { inviteId: existingInvite._id, token: existingInvite.token };
+      // Get workspace name
+      const workspace = await ctx.db.get(args.workspaceId);
+      if (!workspace) {
+        throw new Error("Workspace not found");
+      }
+      return {
+        inviteId: existingInvite._id,
+        token: existingInvite.token,
+        workspaceName: workspace.name,
+      };
     }
 
     // Create new invite
-    const expiresAt = Date.now() + (args.expiresInDays || 7) * 24 * 60 * 60 * 1000;
+    const expiresAt =
+      Date.now() + (args.expiresInDays || 7) * 24 * 60 * 60 * 1000;
     const token = generateInviteToken();
 
     const inviteId = await ctx.db.insert("workspaceInvites", {
@@ -74,7 +79,13 @@ export const createInvite = mutation({
       status: "pending",
     });
 
-    return { inviteId, token };
+    // Get workspace name
+    const workspace = await ctx.db.get(args.workspaceId);
+    if (!workspace) {
+      throw new Error("Workspace not found");
+    }
+
+    return { inviteId, token, workspaceName: workspace.name };
   },
 });
 
@@ -92,19 +103,31 @@ export const getInviteByToken = query({
       return null;
     }
 
-    // Note: Expiration check is handled on the client side or in acceptInvite mutation
-
-    // Get workspace info
     const workspace = await ctx.db.get(invite.workspaceId);
+
     const inviter = await ctx.db
       .query("users")
       .withIndex("by_sessionId", (q) => q.eq("sessionId", invite.invitedBy))
       .first();
 
+    const identity = await ctx.auth.getUserIdentity();
+    let isMember = false;
+    if (identity) {
+      const member = await ctx.db
+        .query("workspaceMembers")
+        .withIndex("by_workspace", (q) =>
+          q.eq("workspaceId", invite.workspaceId),
+        )
+        .filter((q) => q.eq(q.field("userId"), identity.subject))
+        .first();
+      isMember = !!member;
+    }
+
     return {
       ...invite,
       workspace,
       inviter: inviter ? { name: inviter.name, email: inviter.email } : null,
+      isMember,
     };
   },
 });
@@ -129,12 +152,10 @@ export const acceptInvite = mutation({
     }
 
     if (invite.expiresAt < Date.now()) {
-      // Mark as expired and throw error
       await ctx.db.patch(invite._id, { status: "expired" });
       throw new Error("Invite has expired");
     }
 
-    // Check if user email matches invite email
     const user = await ctx.db
       .query("users")
       .withIndex("by_sessionId", (q) => q.eq("sessionId", args.userId))
@@ -148,7 +169,6 @@ export const acceptInvite = mutation({
       throw new Error("This invite is for a different email address");
     }
 
-    // Check if already a member
     const existingMember = await ctx.db
       .query("workspaceMembers")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", invite.workspaceId))
@@ -156,7 +176,6 @@ export const acceptInvite = mutation({
       .first();
 
     if (existingMember) {
-      // Mark invite as accepted even if already member
       await ctx.db.patch(invite._id, {
         status: "accepted",
         acceptedAt: Date.now(),
@@ -211,4 +230,3 @@ export const cancelInvite = mutation({
     await ctx.db.patch(args.inviteId, { status: "expired" });
   },
 });
-

@@ -11,10 +11,12 @@
 import type * as auth from "../auth.js";
 import type * as functions_channels_mutations from "../functions/channels/mutations.js";
 import type * as functions_channels_queries from "../functions/channels/queries.js";
+import type * as functions_chat_actions from "../functions/chat/actions.js";
 import type * as functions_chat_mutations from "../functions/chat/mutations.js";
 import type * as functions_chat_queries from "../functions/chat/queries.js";
 import type * as functions_users_mutations from "../functions/users/mutations.js";
 import type * as functions_users_queries from "../functions/users/queries.js";
+import type * as functions_workspaces_email_actions from "../functions/workspaces/email_actions.js";
 import type * as functions_workspaces_invites from "../functions/workspaces/invites.js";
 import type * as functions_workspaces_mutations from "../functions/workspaces/mutations.js";
 import type * as functions_workspaces_queries from "../functions/workspaces/queries.js";
@@ -30,10 +32,12 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   "functions/channels/mutations": typeof functions_channels_mutations;
   "functions/channels/queries": typeof functions_channels_queries;
+  "functions/chat/actions": typeof functions_chat_actions;
   "functions/chat/mutations": typeof functions_chat_mutations;
   "functions/chat/queries": typeof functions_chat_queries;
   "functions/users/mutations": typeof functions_users_mutations;
   "functions/users/queries": typeof functions_users_queries;
+  "functions/workspaces/email_actions": typeof functions_workspaces_email_actions;
   "functions/workspaces/invites": typeof functions_workspaces_invites;
   "functions/workspaces/mutations": typeof functions_workspaces_mutations;
   "functions/workspaces/queries": typeof functions_workspaces_queries;

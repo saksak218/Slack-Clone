@@ -27,7 +27,6 @@ export const getUsers = query({
   },
   handler: async (ctx, args) => {
     if (args.workspaceId) {
-      // Get users in a specific workspace
       const workspaceId = args.workspaceId;
       const memberships = await ctx.db
         .query("workspaceMembers")
@@ -40,14 +39,13 @@ export const getUsers = query({
           ctx.db
             .query("users")
             .withIndex("by_sessionId", (q) => q.eq("sessionId", id))
-            .first()
-        )
+            .first(),
+        ),
       );
 
       return users.filter((u) => u !== null);
     }
 
-    // Return all users if no workspace specified
     return await ctx.db.query("users").collect();
   },
 });

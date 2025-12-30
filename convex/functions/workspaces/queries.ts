@@ -6,7 +6,6 @@ export const getWorkspaces = query({
     userId: v.string(),
   },
   handler: async (ctx, args) => {
-    // Get all workspaces where user is a member
     const memberships = await ctx.db
       .query("workspaceMembers")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
@@ -14,7 +13,7 @@ export const getWorkspaces = query({
 
     const workspaceIds = memberships.map((m) => m.workspaceId);
     const workspaces = await Promise.all(
-      workspaceIds.map((id) => ctx.db.get(id))
+      workspaceIds.map((id) => ctx.db.get(id)),
     );
 
     return workspaces.filter((w) => w !== null);
@@ -52,10 +51,30 @@ export const getUserWorkspaces = query({
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect();
 
-    return memberships.map((m) => ({
-      membership: m,
-      workspace: null as any, // Will be populated in frontend if needed
-    }));
+    const workspaceIds = memberships.map((m) => m.workspaceId);
+    const workspaces = await Promise.all(
+      workspaceIds.map((id) => ctx.db.get(id)),
+    );
+
+    return memberships
+      .map((m, index) => ({
+        membership: m,
+        workspace: workspaces[index],
+      }))
+      .filter((item) => item.workspace !== null);
   },
 });
 
+export const getWorkspaceMember = query({
+  args: {
+    workspaceId: v.id("workspaces"),
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("workspaceMembers")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .first();
+  },
+});
