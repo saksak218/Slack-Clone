@@ -21,6 +21,7 @@ export default function Home() {
     const router = useRouter();
     const session = authClient.useSession();
     const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
+    const [selectedType, setSelectedType] = useState<"channel" | "conversation">("channel");
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isCheckingWorkspace, setIsCheckingWorkspace] = useState(true);
 
@@ -88,8 +89,9 @@ export default function Home() {
                         <SheetContent side="left" className="w-[280px] p-0 bg-[#3F0E40] border-r border-[#616061]/20">
                             <Sidebar
                                 selectedChannelId={selectedChannelId || undefined}
-                                onSelectChannel={(id) => {
+                                onSelectChannel={(id, type) => {
                                     setSelectedChannelId(id);
+                                    setSelectedType(type);
                                     setSidebarOpen(false);
                                 }}
                             />
@@ -115,7 +117,7 @@ export default function Home() {
 
                             <ResizablePanel defaultSize={80} className="bg-white">
                                 {selectedChannelId ? (
-                                    <ChatPanel id={selectedChannelId} />
+                                    <ChatPanel id={selectedChannelId} type={selectedType} />
                                 ) : (
                                     <div className="h-full flex items-center justify-center bg-white text-gray-500">
                                         <div className="text-center">
@@ -133,13 +135,17 @@ export default function Home() {
                         {selectedChannelId ? (
                             <ChatPanel
                                 id={selectedChannelId}
+                                type={selectedType}
                                 onOpenSidebar={() => setSidebarOpen(true)}
                             />
                         ) : (
                             <div className="h-full bg-[#3F0E40]">
                                 <Sidebar
                                     selectedChannelId={selectedChannelId || undefined}
-                                    onSelectChannel={(id) => setSelectedChannelId(id)}
+                                    onSelectChannel={(id, type) => {
+                                        setSelectedChannelId(id);
+                                        setSelectedType(type);
+                                    }}
                                 />
                             </div>
                         )}

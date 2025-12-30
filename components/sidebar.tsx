@@ -14,7 +14,7 @@ import { CreateChannelDialog } from "@/components/create-channel-dialog";
 
 interface SidebarProps {
     selectedChannelId?: string;
-    onSelectChannel: (id: string) => void;
+    onSelectChannel: (id: string, type: "channel" | "conversation") => void;
 }
 
 export const Sidebar = ({ selectedChannelId, onSelectChannel }: SidebarProps) => {
@@ -62,7 +62,7 @@ export const Sidebar = ({ selectedChannelId, onSelectChannel }: SidebarProps) =>
             userTwoId: userId,
         });
 
-        onSelectChannel(conversationId);
+        onSelectChannel(conversationId, "conversation");
     };
 
     const isOnline = (lastSeen?: number) => {
@@ -105,7 +105,7 @@ export const Sidebar = ({ selectedChannelId, onSelectChannel }: SidebarProps) =>
                         {channels?.map((channel) => (
                             <button
                                 key={channel._id}
-                                onClick={() => onSelectChannel(channel._id)}
+                                onClick={() => onSelectChannel(channel._id, "channel")}
                                 className={cn(
                                     "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[15px] transition-all duration-200",
                                     selectedChannelId === channel._id

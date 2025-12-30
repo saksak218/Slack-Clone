@@ -1,13 +1,27 @@
 "use client";
 
-import { Search, Info, History } from "lucide-react";
+import { Search, Info, History, LogOut } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Navbar = () => {
+    const router = useRouter();
     const session = authClient.useSession();
     const user = session.data?.user;
+
+    const handleSignOut = async () => {
+        await authClient.signOut();
+        router.push("/login");
+        router.refresh();
+    };
 
     return (
         <nav className="bg-[#350D36] text-white h-[40px] flex items-center px-4 shrink-0">
@@ -32,12 +46,22 @@ export const Navbar = () => {
 
             {/* Right side - User profile */}
             <div className="flex-1 flex items-center justify-end">
-                <Avatar className="size-7 rounded-sm border border-white/20">
-                    <AvatarImage src={user?.image || undefined} />
-                    <AvatarFallback className="bg-sky-500 text-[10px] text-white rounded-sm">
-                        {user?.name?.charAt(0).toUpperCase() || "U"}
-                    </AvatarFallback>
-                </Avatar>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Avatar className="size-7 rounded-sm border border-white/20 cursor-pointer hover:opacity-80 transition-opacity">
+                            <AvatarImage src={user?.image || undefined} />
+                            <AvatarFallback className="bg-sky-500 text-[10px] text-white rounded-sm">
+                                {user?.name?.charAt(0).toUpperCase() || "U"}
+                            </AvatarFallback>
+                        </Avatar>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={handleSignOut} className="text-red-600 cursor-pointer">
+                            <LogOut className="size-4 mr-2" />
+                            Sign Out
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </nav>
     );

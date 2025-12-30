@@ -14,15 +14,16 @@ import { cn } from '@/lib/utils';
 
 interface ChatPanelProps {
     id: string; // Can be channelId or conversationId/sessionId
+    type: "channel" | "conversation";
     onOpenSidebar?: () => void;
 }
 
-export const ChatPanel = ({ id, onOpenSidebar }: ChatPanelProps) => {
+export const ChatPanel = ({ id, type, onOpenSidebar }: ChatPanelProps) => {
     const session = authClient.useSession();
     const [threadMessageId, setThreadMessageId] = useState<Id<"messages"> | null>(null);
     const [isMembersOpen, setIsMembersOpen] = useState(false);
 
-    const isChannel = id.startsWith("jh");
+    const isChannel = type === "channel";
 
     const channel = useQuery(api.functions.channels.queries.getChannel,
         isChannel ? { id: id as Id<"channels"> } : "skip"
