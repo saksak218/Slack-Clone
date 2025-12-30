@@ -23,7 +23,7 @@ export const WorkspaceSidebar = () => {
     );
 
     return (
-        <aside className="w-[70px] bg-[#350D36] flex flex-col items-center gap-y-4 py-3 shrink-0">
+        <aside className="w-[70px] bg-[#350D36] h-full flex flex-col items-center gap-y-4 py-3 shrink-0">
             <div
                 onClick={() => router.push("/workspace-select")}
                 className={cn(

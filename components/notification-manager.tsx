@@ -10,9 +10,9 @@ import { Id } from "@/convex/_generated/dataModel";
 export const NotificationManager = () => {
     const session = authClient.useSession();
     const { notify } = useNotifications();
-    const lastMessageRef = useRef<Record<string, string>>({});
     const [workspaceId, setWorkspaceId] = useState<Id<"workspaces"> | null>(null);
     const [isInitialized, setIsInitialized] = useState(false);
+    const previousUnreadRef = useRef<Record<string, { count: number; lastMessageTime: number | null }>>({});
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -25,44 +25,87 @@ export const NotificationManager = () => {
         workspaceId && session.data?.user.id ? { workspaceId, userId: session.data.user.id } : "skip"
     );
 
-    // This is a bit complex: we need to biết when the TOTAL count increases
-    // to trigger a notification. 
-    // But better: we need to know WHICH channel/DM has a NEW message.
-
     useEffect(() => {
-        if (!unreadCounts) return;
+        if (!unreadCounts || !session.data?.user.id) return;
+
+        // Initialize on first load without triggering notifications
+        if (!isInitialized) {
+            unreadCounts.channels.forEach((c: any) => {
+                const key = `channel_${c.id}`;
+                previousUnreadRef.current[key] = {
+                    count: c.count,
+                    lastMessageTime: c.lastMessageTime
+                };
+            });
+            unreadCounts.conversations.forEach((c: any) => {
+                const key = `conversation_${c.id}`;
+                previousUnreadRef.current[key] = {
+                    count: c.count,
+                    lastMessageTime: c.lastMessageTime
+                };
+            });
+            setIsInitialized(true);
+            return;
+        }
 
         let totalUnread = 0;
+        const currentUserId = session.data.user.id;
 
+        // Check channels for new messages from OTHER users
         unreadCounts.channels.forEach((c: any) => {
             totalUnread += c.count;
-            if (isInitialized) {
-                const lastCount = parseInt(lastMessageRef.current[c.id] || "0");
-                if (c.count > lastCount) {
-                    // New message in channel
-                    // We don't have the text here, so we just Notify "New message in channel"
-                    // Or we could fetch the last message, but that's expensive for every channel.
-                    // For now, a generic notification or play sound.
-                    notify("New Message", `You have ${c.count} unread messages in a channel`);
-                }
+            const key = `channel_${c.id}`;
+            const previous = previousUnreadRef.current[key] || { count: 0, lastMessageTime: null };
+
+            // Only notify if:
+            // 1. Count increased
+            // 2. Last message is NOT from current user
+            // 3. There's a new message timestamp
+            if (c.count > previous.count &&
+                c.lastMessageUserId &&
+                c.lastMessageUserId !== currentUserId &&
+                c.lastMessageTime !== previous.lastMessageTime) {
+
+                const newMessages = c.count - previous.count;
+                notify(
+                    "New Message",
+                    `You have ${newMessages} new ${newMessages === 1 ? 'message' : 'messages'} in a channel`
+                );
             }
-            lastMessageRef.current[c.id] = c.count.toString();
+
+            previousUnreadRef.current[key] = {
+                count: c.count,
+                lastMessageTime: c.lastMessageTime
+            };
         });
 
+        // Check conversations for new messages from OTHER users
         unreadCounts.conversations.forEach((c: any) => {
             totalUnread += c.count;
-            if (isInitialized) {
-                const lastCount = parseInt(lastMessageRef.current[c.id] || "0");
-                if (c.count > lastCount) {
-                    notify("New Direct Message", `You have ${c.count} unread direct messages`);
-                }
-            }
-            lastMessageRef.current[c.id] = c.count.toString();
-        });
+            const key = `conversation_${c.id}`;
+            const previous = previousUnreadRef.current[key] || { count: 0, lastMessageTime: null };
 
-        if (!isInitialized) {
-            setIsInitialized(true);
-        }
+            // Only notify if:
+            // 1. Count increased
+            // 2. Last message is NOT from current user
+            // 3. There's a new message timestamp
+            if (c.count > previous.count &&
+                c.lastMessageUserId &&
+                c.lastMessageUserId !== currentUserId &&
+                c.lastMessageTime !== previous.lastMessageTime) {
+
+                const newMessages = c.count - previous.count;
+                notify(
+                    "New Direct Message",
+                    `You have ${newMessages} new ${newMessages === 1 ? 'message' : 'messages'}`
+                );
+            }
+
+            previousUnreadRef.current[key] = {
+                count: c.count,
+                lastMessageTime: c.lastMessageTime
+            };
+        });
 
         // Update document title
         if (totalUnread > 0) {
@@ -70,7 +113,7 @@ export const NotificationManager = () => {
         } else {
             document.title = "Slack Clone";
         }
-    }, [unreadCounts, notify, isInitialized]);
+    }, [unreadCounts, notify, isInitialized, session.data?.user.id]);
 
     return null;
 };

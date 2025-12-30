@@ -237,7 +237,21 @@ export const getUnreadCounts = query({
           .withIndex("by_channel", (q) => q.eq("channelId", c._id))
           .filter((q) => q.gt(q.field("_creationTime"), lastRead))
           .collect();
-        return { id: c._id, count: unreadMessages.length };
+
+        // Get the most recent unread message to check who sent it
+        const lastUnreadMessage =
+          unreadMessages.length > 0
+            ? unreadMessages.sort(
+                (a, b) => b._creationTime - a._creationTime,
+              )[0]
+            : null;
+
+        return {
+          id: c._id,
+          count: unreadMessages.length,
+          lastMessageUserId: lastUnreadMessage?.userId || null,
+          lastMessageTime: lastUnreadMessage?._creationTime || null,
+        };
       }),
     );
 
@@ -250,7 +264,21 @@ export const getUnreadCounts = query({
           .withIndex("by_conversation", (q) => q.eq("conversationId", c._id))
           .filter((q) => q.gt(q.field("_creationTime"), lastRead))
           .collect();
-        return { id: c._id, count: unreadMessages.length };
+
+        // Get the most recent unread message to check who sent it
+        const lastUnreadMessage =
+          unreadMessages.length > 0
+            ? unreadMessages.sort(
+                (a, b) => b._creationTime - a._creationTime,
+              )[0]
+            : null;
+
+        return {
+          id: c._id,
+          count: unreadMessages.length,
+          lastMessageUserId: lastUnreadMessage?.userId || null,
+          lastMessageTime: lastUnreadMessage?._creationTime || null,
+        };
       }),
     );
 
