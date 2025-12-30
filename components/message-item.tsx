@@ -280,8 +280,16 @@ export const MessageItem = ({
                             </TooltipTrigger>
                             <TooltipContent>Add reaction</TooltipContent>
                         </Tooltip>
-                        <PopoverContent className="p-0 border-none shadow-none" side="top" align="center">
+                        <PopoverContent
+                            className="p-0 w-auto border-none z-[100]"
+                            side="top"
+                            align="end"
+                            sideOffset={8}
+                            collisionPadding={16}
+                        >
                             <EmojiPicker
+                                height={350}
+                                width={300}
                                 onEmojiClick={(emoji) => {
                                     onReactionToggle?.(emoji.emoji);
                                 }}
