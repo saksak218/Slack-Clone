@@ -123,15 +123,20 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         (title: string, body: string, icon?: string) => {
             const currentSettings = settingsRef.current;
 
+            console.log('[Notification] notify called:', { title, body, currentSettings });
+
             if (currentSettings.sound) {
+                console.log('[Notification] Playing sound...');
                 playSound();
             }
 
             if (currentSettings.vibration) {
+                console.log('[Notification] Triggering vibration...');
                 vibrate();
             }
 
             if (currentSettings.native && Notification.permission === "granted") {
+                console.log('[Notification] Showing native notification...');
                 try {
                     new Notification(title, {
                         body,
@@ -141,6 +146,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 } catch (e) {
                     console.error("Failed to show notification", e);
                 }
+            } else {
+                console.log('[Notification] Native notification skipped:', {
+                    native: currentSettings.native,
+                    permission: Notification.permission
+                });
             }
         },
         [playSound, vibrate],
