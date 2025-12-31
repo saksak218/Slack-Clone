@@ -147,12 +147,7 @@ export function LoginForm({
             </svg>
             Sign in with Google
           </Button>
-          <Button variant="outline" className="h-11 text-base font-semibold border-slate-300 hover:bg-slate-50 transition-colors">
-            <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.05 20.28c-.96.95-2.04 1.44-3.23 1.47-1.15.03-2.18-.51-3.32-.51-1.17 0-2.3.51-3.34.54-1.12.03-2.31-.5-3.29-1.47C1.94 18.27.42 14.71.42 11.23c0-3.48 2.14-5.32 4.19-5.32 1.06 0 1.95.42 2.76.42 1.12 0 1.74-.42 3-.42 1.95 0 3.73 1.54 4.54 3.08-3.9 1.72-3.29 7.01.16 8.35-.11.45-.4.89-1 1.47l-.02-.53zM12.03 5.25c.03-2.43 2-4.41 4.38-4.41.03 2.4-1.92 4.49-4.38 4.41z" />
-            </svg>
-            Sign in with Apple
-          </Button>
+
         </div>
 
         <div className="flex items-center gap-4 py-2">
